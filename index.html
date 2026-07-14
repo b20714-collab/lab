@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 말랑말랑 양자 확률 연구소 🌸</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #fff0f5;
+            --card-bg: #ffffff;
+            --accent-pink: #ffb6c1;
+            --deep-pink: #ff69b4;
+            --text-main: #4a3740;
+            --text-muted: #8a737d;
+            --canvas-bg: radial-gradient(circle, #ffffff 0%, #ffe4e1 100%);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1625;
+            --card-bg: #2d2438;
+            --accent-pink: #634375;
+            --deep-pink: #da70d6;
+            --text-main: #f0e6f6;
+            --text-muted: #bdaec6;
+            --canvas-bg: radial-gradient(circle, #251f30 0%, #0c0813 100%);
+        }
+
+        body {
+            margin: 0;
+            font-family: "Gamja Flower", system-ui, sans-serif;
+            font-size: 1.15rem;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--accent-pink);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .header-right { display: flex; align-items: center; gap: 15px; }
+
+        .user-badge {
+            background-color: rgba(255, 182, 193, 0.15);
+            padding: 5px 15px;
+            border-radius: 15px;
+            border: 1px solid var(--accent-pink);
+            font-size: 1rem;
+        }
+
+        .theme-toggle-btn {
+            background: var(--card-bg);
+            border: 2px solid var(--accent-pink);
+            color: var(--deep-pink);
+            padding: 5px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-family: "Gamja Flower", sans-serif;
+            font-size: 0.95rem;
+        }
+
+        .tabs { display: flex; gap: 15px; }
+        .tab-btn {
+            font-family: "Gamja Flower", sans-serif;
+            background: var(--card-bg);
+            border: 2px solid var(--accent-pink);
+            color: var(--deep-pink);
+            padding: 8px 22px;
+            cursor: pointer;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 0px var(--accent-pink); 
+            transition: all 0.1s;
+        }
+        .tab-btn.active, .tab-btn:hover {
+            background-color: var(--deep-pink);
+            border-color: var(--deep-pink);
+            color: #fff;
+            transform: translateY(2px);
+            box-shadow: 0 2px 0px rgba(0,0,0,0.2);
+        }
+
+        .main-container { display: flex; flex: 1; position: relative; overflow: hidden; }
+        #canvas-container { flex: 1; width: 100%; height: 100%; background: var(--canvas-bg); }
+
+        .panel {
+            width: 360px;
+            background-color: var(--card-bg);
+            opacity: 0.96;
+            border-left: 3px solid var(--accent-pink);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            position: absolute; right: 0; top: 0; bottom: 0; z-index: 10;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .hidden { display: none !important; }
+        h2 { margin: 0; color: var(--deep-pink); font-size: 1.6rem; border-bottom: 2px dashed var(--accent-pink); padding-bottom: 6px; }
+
+        .guide-box { background-color: rgba(255, 182, 193, 0.1); border: 2px dashed var(--deep-pink); border-radius: 15px; padding: 12px; font-size: 1.05rem; line-height: 1.4; }
+        .guide-box strong { color: var(--deep-pink); }
+        .guide-box ul { margin: 4px 0 0 0; padding-left: 18px; }
+
+        .control-group { display: flex; flex-direction: column; gap: 6px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 1.05rem; }
+
+        select, button, input[type="text"], input[type="range"] {
+            font-family: "Gamja Flower", sans-serif;
+            background-color: var(--card-bg); border: 2px solid var(--accent-pink);
+            color: var(--text-main); padding: 8px 12px; border-radius: 18px; font-size: 1.05rem; outline: none;
+        }
+
+        button { cursor: pointer; box-shadow: 0 4px 0px var(--accent-pink); transition: all 0.1s; }
+        button:active { transform: translateY(3px); box-shadow: 0 1px 0px var(--accent-pink); }
+        button.action-btn {
+            background-color: var(--deep-pink); color: #fff; border: 2px solid var(--deep-pink);
+            font-size: 1.15rem; padding: 10px; border-radius: 20px; box-shadow: 0 4px 0px rgba(0,0,0,0.15);
+        }
+        button.action-btn:active { transform: translateY(3px); box-shadow: 0 1px 0px rgba(0,0,0,0.15); }
+
+        .stats-box { background-color: rgba(255, 182, 193, 0.05); padding: 12px; border-radius: 18px; border: 2px solid var(--accent-pink); line-height: 1.4; }
+
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .item-card {
+            border: 2px solid var(--accent-pink); border-radius: 15px; padding: 8px;
+            text-align: center; background: rgba(255, 182, 193, 0.02); font-size: 0.95rem;
+        }
+        .item-card button { font-size: 0.9fr; padding: 3px 8px; margin-top: 5px; }
+
+        #fever-banner {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(45deg, #ff69b4, #ffb6c1); color: white;
+            padding: 8px 30px; border-radius: 20px; font-size: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: none; z-index: 5;
+            animation: bounce 0.5s infinite alternate;
+        }
+        @keyframes bounce { from { top: 20px; } to { top: 15px; } }
+
+        .result-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 99; pointer-events: none; opacity: 0; transition: opacity 0.3s ease;
+        }
+        .result-overlay.active { opacity: 1; pointer-events: auto; }
+        .result-content {
+            padding: 40px 60px; border-radius: 30px; text-align: center;
+            transform: scale(0.7); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); color: white;
+        }
+        .result-overlay.active .result-content { transform: scale(1); }
+        .success-bg { background: linear-gradient(135deg, #ff69b4, #ff1493); border: 4px solid #fff; }
+        .fail-bg { background: linear-gradient(135deg, #4a3740, #2d2438); border: 4px solid var(--accent-pink); }
+    </style>
+</head>
+<body>
+
+    <div id="result-popup" class="result-overlay" onclick="closeResultPopup()">
+        <div id="popup-content" class="result-content">
+            <h1 id="popup-title" style="margin: 0 0 10px 0; font-size: 3rem;">🎉 성공!</h1>
+            <p id="popup-text" style="margin: 0 0 20px 0; font-size: 1.4rem;">텍스트</p>
+            <button class="action-btn" style="background:#fff; color:#ff69b4; border:none; padding: 5px 25px;">닫기</button>
+        </div>
+    </div>
+
+    <div id="fever-banner">🔥 양자 중첩 피버 모드!! (점수 2배) 🔥</div>
+
+    <header>
+        <h1 style="margin:0; font-size: 1.8rem; color: var(--deep-pink); font-weight: normal;">🌸 말랑말랑 양자 확률 연구소</h1>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('sim')">✨ 1. 오비탈 시뮬레이터</button>
+            <button class="tab-btn" onclick="switchTab('game')">🎮 2. 전자 추적 게임</button>
+        </div>
+        <div class="header-right">
+            <button class="theme-toggle-btn" onclick="toggleTheme()">🌙 야간 모드</button>
+            <div class="user-badge">🔬 연구원: <span id="user-display" style="color:var(--deep-pink); font-weight:bold;">김이화</span></div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div id="canvas-container"></div>
+
+        <div id="sim-panel" class="panel">
+            <h2>✨ 오비탈 시뮬레이터</h2>
+            <div class="guide-box">
+                🎯 <strong>이게 뭐하는 화면인가요?</strong><br>
+                양자역학에서 전자 1개가 어디서 발견될 수 있는지 <strong>확률 분포를 무작위 점(Sample)을 찍어 시각화</strong>하는 도구예요! 점이 뭉치면 구형(1s)이나 아령(2p) 모양이 완성돼요.
+            </div>
+            <div class="control-group">
+                <label for="orbital-select">구경할 오비탈 모양</label>
+                <select id="orbital-select" onchange="resetSimulation()">
+                    <option value="1s">수소 1s 오비탈 (동글동글 솜사탕 모양)</option>
+                    <option value="2p">수소 2p_z 오비탈 (위아래 쌍아령 모양)</option>
+                </select>
+            </div>
+
+            <div class="control-group" style="border: 2px dashed var(--accent-pink); padding: 12px; border-radius: 18px; background: rgba(255, 182, 193, 0.05);">
+                <span style="font-size: 1.1rem; color: var(--deep-pink); font-weight: bold;">📊 통계 세팅 및 용어 설명</span>
+                
+                <div style="margin-top: 6px;">
+                    <div class="slider-label">
+                        <span>프레임당 샘플링 속도</span>
+                        <span id="speed-val" style="color:var(--deep-pink)">200 개</span>
+                    </div>
+                    <input type="range" id="sim-speed" min="10" max="1000" step="10" value="200" oninput="document.getElementById('speed-val').innerText = this.value + ' 개'">
+                    <div style="font-size:0.95rem; color:var(--text-muted); margin-top:2px;">💡 화면이 한 번 깜빡일 때 연산할 점의 수예요. 높이면 엄청 빠르게 그려져요!</div>
+                </div>
+
+                <div style="margin-top: 10px;">
+                    <div class="slider-label">
+                        <span>최대 목표 샘플 수</span>
+                        <span id="max-val" style="color:var(--deep-pink)">30,000 개</span>
+                    </div>
+                    <input type="range" id="sim-max" min="5000" max="50000" step="5000" value="30000" oninput="document.getElementById('max-val').innerText = Number(this.value).toLocaleString() + ' 개'; maxParticles = Number(this.value);">
+                    <div style="font-size:0.95rem; color:var(--text-muted); margin-top:2px;">💡 수집할 <b>총 표본의 크기(N)</b>예요. 샘플 수가 많아질수록 통계학의 <b>[대수의 법칙]</b>에 의해 실제 수학 이론 그래프와 똑같이 매꿔져요!</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <button class="action-btn" id="sim-toggle-btn" onclick="toggleSimulation()">시뮬레이션 시작! 💕</button>
+                <button onclick="resetSimulation()">처음부터 다시 그리기</button>
+            </div>
+            <div class="stats-box">
+                조사된 총 샘플 수(N): <span id="sample-count" style="color:var(--deep-pink); font-weight:bold;">0</span> / <span id="current-max-display">30,000</span>
+            </div>
+
+            <div class="stats-box" style="border-color: #9370db; background: rgba(147, 112, 219, 0.05);">
+                📡 <strong style="color:var(--deep-pink)">실시간 확률 밀도 연산 리포트</strong><br>
+                <div style="font-size: 1rem; margin-top: 5px; line-height: 1.3;">
+                    • <b>핵 주변(근거리 영역)</b> 발견비율: <span id="report-near" style="color:var(--deep-pink); font-weight:bold;">0.0%</span><br>
+                    • <b>오비탈 마루(중거리 영역)</b> 발견비율: <span id="report-mid" style="color:dodgerblue; font-weight:bold;">0.0%</span><br>
+                    • <b>외곽 경계(원거리 영역)</b> 발견비율: <span id="report-far" style="color:var(--text-muted);">0.0%</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>핵으로부터의 거리별 발견 확률 분포</label>
+                <div id="chart-container"><canvas id="radialChart"></canvas></div>
+            </div>
+        </div>
+
+        <div id="game-panel" class="panel hidden">
+            <h2>🎮 양자 베이지안 추적 게임</h2>
+            
+            <div class="guide-box">
+                🎯 <strong>이건 어떻게 하는 게임인가요?</strong><br>
+                양자역학계에 전자 1개가 숨어버렸어요! 3D 화면을 <strong>우클릭 드래그로 돌려보면서</strong> 전자가 숨어있을 만한 구역을 <strong>좌클릭(관측)</strong>해 보세요!
+                <ul>
+                    <li>공간에 떠 있는 <b>초록색 안개 점들</b>은 전자가 존재할 후보 확률 지도예요.</li>
+                    <li>클릭했는데 허탕을 치면, <b>베이즈 정리</b>에 의해 그 구역의 초록 점들은 소거되고 다른 쪽 확률이 실시간으로 증폭돼요!</li>
+                </ul>
+            </div>
+            
+            <div class="stats-box" style="position:relative;">
+                ❤️ 남은 기회: <span id="clicks-left" style="color:var(--deep-pink); font-weight:bold;">5</span>회<br>
+                ✨ 연속 콤보: <span id="combo-display" style="color:orange; font-weight:bold;">0</span><br>
+                💰 연구 포인트: <span id="points-display" style="color:dodgerblue; font-weight:bold;">100</span> P<br>
+                📡 레이더 신호: <span id="obs-result" style="font-weight:bold;">대기 중</span>
+            </div>
+
+            <div class="control-group">
+                <label>⚡ 양자역학 스킬 상점</label>
+                <div class="shop-grid">
+                    <div class="item-card">
+                        <b>🐱 슈뢰딩거 방울</b><br><span style="font-size:0.8rem; color:var(--text-muted)">오답 격자 30% 소거</span><br>
+                        <button onclick="useSkill('cat')">구매 (30P)</button>
+                    </div>
+                    <div class="item-card">
+                        <b>🔍 불확정성 돋보기</b><br><span style="font-size:0.8rem; color:var(--text-muted)">정답 근처 힌트 생성</span><br>
+                        <button onclick="useSkill('lens')">구매 (50P)</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="game-btn action-btn" onclick="startNewGame()">새 게임 시작!</button>
+            <div id="game-result" style="font-weight: bold; text-align: center; min-height:24px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let username = "김이화";
+        let userPoints = 100; 
+        let currentCombo = 0;
+        let isFever = false;
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const targetTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', targetTheme);
+            document.querySelector('.theme-toggle-btn').innerText = targetTheme === 'dark' ? '☀️ 주간 모드' : '🌙 야간 모드';
+        }
+
+        function showResultPopup(type, title, text) {
+            const popup = document.getElementById('result-popup');
+            const content = document.getElementById('popup-content');
+            document.getElementById('popup-title').innerText = title;
+            document.getElementById('popup-text').innerText = text;
+            
+            content.className = 'result-content ' + (type === 'success' ? 'success-bg' : 'fail-bg');
+            popup.classList.add('active');
+        }
+        function closeResultPopup() {
+            document.getElementById('result-popup').classList.remove('active');
+        }
+
+        function updatePoints(amount) {
+            userPoints += amount;
+            document.getElementById('points-display').innerText = userPoints;
+        }
+
+        let currentTab = 'sim';
+        let scene, camera, renderer, particleSystem, gameGridParticles;
+        let isSimulating = false, totalSamples = 0, maxParticles = 30000, chart, distanceData = new Array(20).fill(0);
+        const GRID_RES = 12;
+        let priorProbabilities = [], gridPositions = [];
+        let gameState = { targetOrbital: '1s', clicksLeft: 5, targetLocation: new THREE.Vector3(), isOver: false };
+
+        function getProbabilityDensity(x, y, z, type) {
+            let r = Math.sqrt(x*x + y*y + z*z);
+            return type === '1s' ? Math.exp(-r * 1.5) : (z * z) * Math.exp(-r * 0.8) * 0.4;
+        }
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 5, 10); camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            const nucleus = new THREE.Mesh(new THREE.SphereGeometry(0.18, 32, 32), new THREE.MeshBasicMaterial({ color: 0xff1493 }));
+            scene.add(nucleus);
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(50000 * 3), 3));
+            particleSystem = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xff69b4, size: 0.08, transparent: true, opacity: 0.65 }));
+            scene.add(particleSystem);
+
+            initGameGrid();
+
+            let isDragging = false, prevMouse = { x: 0, y: 0 };
+            container.addEventListener('mousedown', (e) => {
+                if(e.button === 2) isDragging = true;
+                if(e.button === 0 && currentTab === 'game') handleGridClick(e);
+            });
+            container.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    let dx = (e.offsetX - prevMouse.x) * 0.005, dy = (e.offsetY - prevMouse.y) * 0.005;
+                    [particleSystem, gameGridParticles].forEach(p => { p.rotation.y += dx; p.rotation.x += dy; });
+                }
+                prevMouse = { x: e.offsetX, y: e.offsetY };
+            });
+            window.addEventListener('mouseup', () => isDragging = false);
+            container.addEventListener('contextmenu', e => e.preventDefault());
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+            animate();
+        }
+
+        function initGameGrid() {
+            const gridGeo = new THREE.BufferGeometry();
+            const positions = [], colors = [];
+            let size = 6, step = size / (GRID_RES - 1);
+            for(let i=0; i<GRID_RES; i++) {
+                for(let j=0; j<GRID_RES; j++) {
+                    for(let k=0; k<GRID_RES; k++) {
+                        let x = -size/2 + i*step, y = -size/2 + j*step, z = -size/2 + k*step;
+                        positions.push(x, y, z); gridPositions.push(new THREE.Vector3(x, y, z));
+                        priorProbabilities.push(1.0); colors.push(0, 1, 0, 0.1); 
+                    }
+                }
+            }
+            gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            gridGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+            gameGridParticles = new THREE.Points(gridGeo, new THREE.PointsMaterial({ size: 0.18, vertexColors: true, transparent: true, depthWrite: false }));
+            gameGridParticles.visible = false; 
+            scene.add(gameGridParticles);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (isSimulating && totalSamples < maxParticles) {
+                const orbitalType = document.getElementById('orbital-select').value;
+                const speed = parseInt(document.getElementById('sim-speed').value);
+                document.getElementById('current-max-display').innerText = maxParticles.toLocaleString();
+                const geo = particleSystem.geometry; const pos = geo.attributes.position.array;
+                
+                for (let i = 0; i < speed; i++) {
+                    if (totalSamples >= maxParticles) {
+                        isSimulating = false;
+                        document.getElementById('sim-toggle-btn').innerText = "오비탈 완성! ✨";
+                        break;
+                    }
+                    let x = (Math.random() - 0.5) * 10, y = (Math.random() - 0.5) * 10, z = (Math.random() - 0.5) * 10;
+                    if (Math.random() < getProbabilityDensity(x, y, z, orbitalType)) {
+                        pos[totalSamples * 3] = x; pos[totalSamples * 3 + 1] = y; pos[totalSamples * 3 + 2] = z;
+                        let bin = Math.floor(Math.sqrt(x*x + y*y + z*z) * 2);
+                        if (bin < 20) distanceData[bin]++;
+                        totalSamples++;
+                    }
+                }
+                geo.attributes.position.needsUpdate = true; geo.setDrawRange(0, totalSamples);
+                document.getElementById('sample-count').innerText = totalSamples.toLocaleString();
+                if(chart) { chart.data.datasets[0].data = distanceData; chart.update('none'); }
+
+                let near = 0, mid = 0, far = 0;
+                for(let i=0; i<20; i++) {
+                    if(i < 5) near += distanceData[i];
+                    else if(i < 12) mid += distanceData[i];
+                    else far += distanceData[i];
+                }
+                let sum = near + mid + far || 1;
+                document.getElementById('report-near').innerText = ((near/sum)*100).toFixed(1) + "%";
+                document.getElementById('report-mid').innerText = ((mid/sum)*100).toFixed(1) + "%";
+                document.getElementById('report-far').innerText = ((far/sum)*100).toFixed(1) + "%";
+            }
+            renderer.render(scene, camera);
+        }
+
+        function toggleSimulation() { 
+            if(totalSamples >= maxParticles) resetSimulation(); 
+            isSimulating = !isSimulating; 
+            document.getElementById('sim-toggle-btn').innerText = isSimulating ? "잠시 멈춤 ⏸️" : "시뮬레이션 시작! 💕";
+        }
+        function resetSimulation() { 
+            isSimulating = false; totalSamples = 0; distanceData.fill(0); particleSystem.geometry.setDrawRange(0, 0); 
+            document.getElementById('sample-count').innerText = 0;
+            document.getElementById('sim-toggle-btn').innerText = "시뮬레이션 시작! 💕";
+            if(chart) { chart.data.datasets[0].data = distanceData; chart.update('none'); }
+            document.getElementById('report-near').innerText = "0.0%";
+            document.getElementById('report-mid').innerText = "0.0%";
+            document.getElementById('report-far').innerText = "0.0%";
+        }
+
+        function startNewGame() {
+            gameState.targetOrbital = Math.random() > 0.5 ? '1s' : '2p';
+            gameState.clicksLeft = 5; gameState.isOver = false;
+            document.getElementById('game-result').innerText = "";
+            document.getElementById('clicks-left').innerText = gameState.clicksLeft;
+            document.getElementById('obs-result').innerText = "대기 중";
+            
+            while(true) {
+                let x = (Math.random() - 0.5) * 5, y = (Math.random() - 0.5) * 5, z = (Math.random() - 0.5) * 5;
+                if(Math.random() < getProbabilityDensity(x, y, z, gameState.targetOrbital)) {
+                    gameState.targetLocation.set(x, y, z); break;
+                }
+            }
+            let totalInitialDensity = 0;
+            for(let i=0; i<gridPositions.length; i++) {
+                let dens = getProbabilityDensity(gridPositions[i].x, gridPositions[i].y, gridPositions[i].z, gameState.targetOrbital);
+                priorProbabilities[i] = dens + 0.01; totalInitialDensity += priorProbabilities[i];
+            }
+            priorProbabilities = priorProbabilities.map(p => p / totalInitialDensity);
+
+            resetSimulation();
+            gameGridParticles.visible = true; particleSystem.visible = false;
+            updateGridVisuals();
+        }
+
+        function handleGridClick(event) {
+            if (gameState.isOver) return;
+            const container = document.getElementById('canvas-container');
+            const rect = renderer.domElement.getBoundingClientRect();
+            const mouse = new THREE.Vector2(((event.clientX - rect.left) / container.clientWidth) * 2 - 1, -((event.clientY - rect.top) / container.clientHeight) * 2 + 1);
+
+            const raycaster = new THREE.Raycaster(); raycaster.setFromCamera(mouse, camera);
+            const intersectPoint = new THREE.Vector3(); raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1).applyQuaternion(particleSystem.quaternion), 0), intersectPoint);
+
+            let isHit = intersectPoint.distanceTo(gameState.targetLocation) < 1.0;
+            gameState.clicksLeft--;
+            document.getElementById('clicks-left').innerText = gameState.clicksLeft;
+
+            if(isHit) {
+                document.getElementById('obs-result').innerText = "🎉 관측 성공!";
+                currentCombo++;
+                if(currentCombo >= 2) {
+                    isFever = true;
+                    document.getElementById('fever-banner').style.display = 'block';
+                }
+                let bonus = isFever ? 100 : 50;
+                updatePoints(bonus);
+                
+                document.getElementById('game-result').innerHTML = `<span style="color:#ff1493">🌈 성공! 포인트 +${bonus}P 획득!</span>`;
+                gameState.isOver = true;
+
+                showResultPopup('success', '🎉 관측 대성공!', `전자의 파동함수를 붕괴시켰습니다!\n보너스 연구 포인트 +${bonus}P를 획득합니다.`);
+            } else {
+                document.getElementById('obs-result').innerText = "💨 실패! (신호 없음)";
+                currentCombo = 0; isFever = false;
+                document.getElementById('fever-banner').style.display = 'none';
+
+                let evidenceTotal = 0;
+                let newPosteriors = priorProbabilities.map((p, i) => {
+                    let likelihood = 1.0 - Math.exp(-gridPositions[i].distanceTo(intersectPoint) * 1.5);
+                    let val = likelihood * p; evidenceTotal += val; return val;
+                });
+                priorProbabilities = newPosteriors.map(p => p / evidenceTotal);
+                updateGridVisuals();
+            }
+            document.getElementById('combo-display').innerText = currentCombo;
+            if(!isHit && gameState.clicksLeft <= 0) {
+                document.getElementById('game-result').innerHTML = `<span>😿 탐색 실패.. 전자가 멀리 도망쳤습니다!</span>`;
+                gameState.isOver = true;
+
+                showResultPopup('fail', '😿 탐색 최종 실패..', '측정 한계를 초과하여 전자가 다른 궤도로 도망쳤습니다!\n새 게임을 시작해 다시 추적해 보세요.');
+            }
+        }
+
+        function useSkill(type) {
+            if(gameState.isOver) return alert("게임이 진행 중일 때만 스킬을 쓸 수 있어요!");
+            if(type === 'cat' && userPoints >= 30) {
+                updatePoints(-30);
+                priorProbabilities = priorProbabilities.map((p, i) => gridPositions[i].distanceTo(gameState.targetLocation) > 2.0 ? p * 0.2 : p);
+                updateGridVisuals();
+                alert("🐱 야옹! 전자가 없는 후보 구역을 대폭 소거했습니다.");
+            } else if(type === 'lens' && userPoints >= 50) {
+                updatePoints(-50);
+                priorProbabilities = priorProbabilities.map((p, i) => gridPositions[i].distanceTo(gameState.targetLocation) < 1.5 ? p * 4 : p);
+                updateGridVisuals();
+                alert("🔍 파장 증폭! 진짜 전자 위치 근처의 안개가 선명해졌습니다.");
+            } else {
+                alert("연구 포인트가 부족해요! 😿 판을 이겨서 포인트를 쌓으세요.");
+            }
+        }
+
+        function updateGridVisuals() {
+            const colors = gameGridParticles.geometry.attributes.color.array;
+            let maxP = Math.max(...priorProbabilities);
+            for(let i=0; i<gridPositions.length; i++) {
+                let intensity = maxP > 0 ? priorProbabilities[i] / maxP : 0;
+                colors[i * 4] = 1.0; colors[i * 4 + 1] = 0.4 + (1-intensity)*0.4; colors[i * 4 + 2] = 0.7; colors[i * 4 + 3] = intensity * 0.75;
+            }
+            gameGridParticles.geometry.attributes.color.needsUpdate = true;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('sim-panel').classList.add('hidden'); document.getElementById('game-panel').classList.add('hidden');
+            if (tab === 'sim') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active'); document.getElementById('sim-panel').classList.remove('hidden');
+                gameGridParticles.visible = false; particleSystem.visible = true; resetSimulation();
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active'); document.getElementById('game-panel').classList.remove('hidden');
+                startNewGame();
+            }
+        }
+
+        window.onload = () => {
+            initThree();
+            ctx = document.getElementById('radialChart').getContext('2d');
+            chart = new Chart(ctx, { type: 'bar', data: { labels: Array.from({length: 20}, (_, i) => (i/2).toFixed(1)), datasets: [{ data: distanceData, backgroundColor: '#ff69b4' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+        };
+    </script>
+</body>
+</html>
